@@ -4,9 +4,11 @@ import (
 	"context"
 	"log"
 	"net"
+	"os"
 	"os/exec"
 
 	"github.com/Rukenshia/ddm_server/proto"
+	"github.com/getlantern/systray"
 	"google.golang.org/grpc"
 )
 
@@ -23,6 +25,27 @@ func (d *ddmServer) SwitchInput(ctx context.Context, req *proto.SwitchInputReque
 }
 
 func main() {
+	onExit := func() {
+		os.Exit(0)
+	}
+	// Should be called at the very beginning of main().
+	systray.Run(onReady, onExit)
+}
+
+func onReady() {
+	systray.SetTitle("DDM Server")
+	systray.SetTooltip("Dell Display Manager Server")
+	quit := systray.AddMenuItem("Quit", "Quit the application")
+
+	go func() {
+		for {
+			select {
+			case <-quit.ClickedCh:
+				systray.Quit()
+			}
+		}
+	}()
+
 	lis, err := net.Listen("tcp", "0.0.0.0:7777")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
